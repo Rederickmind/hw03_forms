@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
-  {% block title %} Профиль пользователя {{ user }} {% endblock %}
+  {% block title %} Профиль пользователя {{ username }} {% endblock %}
 {% block content %}
 <div class="container py-5">
-    <h1>Все посты пользователя {{ user }}</h1>
+    <h1>Все посты пользователя {{ username }}</h1>
     <h3>Всего постов: {{ post_quantity }} </h3>
     <article>
       {% for post in page_obj %}
         <ul>
           <li>
-            Автор: {{ user }}
-            <a href= "{% url 'posts:profile' user %}"> Все посты пользователя</a>
+            Автор: {{ author }}
+            <a href= "{% url 'posts:profile' username %}"> Все посты пользователя</a>
           </li>
           <li>
             Дата публикации: {{ post.pub_date|date:"d E Y" }}
