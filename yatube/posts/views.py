@@ -75,6 +75,7 @@ def post_detail(request, post_id):
 @login_required
 def post_create(request):
     form = PostForm(request.POST)
+    user = request.user
     if request.method == 'POST':
         if form.is_valid():
             post = form.save(commit=False)
@@ -82,7 +83,7 @@ def post_create(request):
             form.cleaned_data['group']
             post.author = request.user
             post.save()
-            return redirect('posts:profile', post.author.username)
+            return redirect('posts:profile', user.username)
     context = {
         'form': form
     }
