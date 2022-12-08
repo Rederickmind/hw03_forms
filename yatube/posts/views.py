@@ -19,7 +19,7 @@ def get_page_obj(queryset, request):
     return {
         'page_obj': page_obj
     }
-    
+
 
 def index(request):
     """Главная страница"""

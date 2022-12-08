@@ -13,7 +13,7 @@ class PostForm(forms.ModelForm):
             'group': ('Группа'),
         }
         help_texts = {
-            'text':('Текст поста не может быть пустым')
+            'text': ('Текст поста не может быть пустым')
         }
 
     def clean_text(self):
