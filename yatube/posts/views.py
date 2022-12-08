@@ -1,26 +1,29 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Post, Group, User
-from .forms import PostForm
-from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404, redirect, render
 
+from .forms import PostForm
+from .models import Group, Post, User
+
+
+def get_page_obj(queryset, request):
+    """Создание Paginator с нужным queryset"""
+    # Количество постов на странице
+    POSTS_AMOUNT = 10
+    # Показывать по POSTS_AMOUNT записей на странице.
+    paginator = Paginator(queryset, POSTS_AMOUNT)
+    # Из URL извлекаем номер запрошенной страницы
+    page_number = request.GET.get('page')
+    # Получаем набор записей для страницы с запрошенным номером
+    page_obj = paginator.get_page(page_number)
+    return {
+        'page_obj': page_obj
+    }
+    
 
 def index(request):
     """Главная страница"""
-    posts = Post.objects.all()
-    # Показывать по 10 записей на странице.
-    paginator = Paginator(posts, 10)
-
-    # Из URL извлекаем номер запрошенной страницы
-    page_number = request.GET.get('page')
-
-    # Получаем набор записей для страницы с запрошенным номером
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        'page_obj': page_obj,
-    }
-
+    context = get_page_obj(Post.objects.all(), request)
     return render(request, 'posts/index.html', context)
 
 
@@ -28,41 +31,29 @@ def group_posts(request, slug):
     """Получение постов нужной группы по запросу"""
     group = get_object_or_404(Group, slug=slug)
     posts = group.posts.all()
-    # Показывать по 10 записей на странице.
-    paginator = Paginator(posts, 10)
-
-    # Из URL извлекаем номер запрошенной страницы
-    page_number = request.GET.get('page')
-
-    # Получаем набор записей для страницы с запрошенным номером
-    page_obj = paginator.get_page(page_number)
-
     context = {
         'group': group,
-        'page_obj': page_obj,
     }
+    context.update(get_page_obj(posts, request))
     return render(request, 'posts/group_list.html', context)
 
 
-# Функция для профиля пользователя
 def profile(request, username):
+    """Отображение профиля пользователя"""
     # Код запроса к модели User
     user = get_object_or_404(User, username=username)
-    post_list = Post.objects.filter(author=user)
-    post_quantity = post_list.count()
-    paginator = Paginator(post_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    post_list = user.posts.all()
+    post_quantity = user.posts.count()
     context = {
         'username': user,
-        'page_obj': page_obj,
         'post_quantity': post_quantity
     }
+    context.update(get_page_obj(post_list, request))
     return render(request, 'posts/profile.html', context)
 
 
-# Функция для просмотра поста
 def post_detail(request, post_id):
+    """Функция для просмотра поста"""
     # Код запроса к модели Posts
     post = get_object_or_404(Post, id=post_id)
     context = {
@@ -71,28 +62,25 @@ def post_detail(request, post_id):
     return render(request, 'posts/post_detail.html', context)
 
 
-# Функция создания нового поста
 @login_required
 def post_create(request):
-    form = PostForm(request.POST)
+    """Функция создания нового поста"""
+    form = PostForm(request.POST or None)
     user = request.user
-    if request.method == 'POST':
-        if form.is_valid():
-            post = form.save(commit=False)
-            form.cleaned_data['text']
-            form.cleaned_data['group']
-            post.author = request.user
-            post.save()
-            return redirect('posts:profile', user.username)
     context = {
         'form': form
     }
-    return render(request, 'posts/post_create.html', context)
+    if not form.is_valid():
+        return render(request, 'posts/post_create.html', context)
+    new_post = form.save(commit=False)
+    new_post.author = request.user
+    new_post.save()
+    return redirect('posts:profile', user.username)
 
 
-# Функция для редактирования поста
 @login_required
 def post_edit(request, post_id):
+    """Функция для редактирования поста"""
     post = get_object_or_404(Post, pk=post_id)
     form = PostForm(request.POST, instance=post)
     if post.author != request.user:
