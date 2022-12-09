@@ -5,25 +5,22 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .forms import PostForm
 from .models import Group, Post, User
 
+POSTS_AMOUNT = 10
+
 
 def get_page_obj(queryset, request):
     """Создание Paginator с нужным queryset"""
-    # Количество постов на странице
-    POSTS_AMOUNT = 10
-    # Показывать по POSTS_AMOUNT записей на странице.
     paginator = Paginator(queryset, POSTS_AMOUNT)
-    # Из URL извлекаем номер запрошенной страницы
     page_number = request.GET.get('page')
-    # Получаем набор записей для страницы с запрошенным номером
     page_obj = paginator.get_page(page_number)
-    return {
-        'page_obj': page_obj
-    }
+    return page_obj
 
 
 def index(request):
     """Главная страница"""
-    context = get_page_obj(Post.objects.all(), request)
+    context = {
+        'page_obj': get_page_obj(Post.objects.all(), request)
+    }
     return render(request, 'posts/index.html', context)
 
 
@@ -33,8 +30,8 @@ def group_posts(request, slug):
     posts = group.posts.all()
     context = {
         'group': group,
+        'page_obj': get_page_obj(posts, request)
     }
-    context.update(get_page_obj(posts, request))
     return render(request, 'posts/group_list.html', context)
 
 
@@ -46,9 +43,9 @@ def profile(request, username):
     post_quantity = user.posts.count()
     context = {
         'username': user,
-        'post_quantity': post_quantity
+        'post_quantity': post_quantity,
+        'page_obj': get_page_obj(post_list, request)
     }
-    context.update(get_page_obj(post_list, request))
     return render(request, 'posts/profile.html', context)
 
 
@@ -73,7 +70,7 @@ def post_create(request):
     if not form.is_valid():
         return render(request, 'posts/post_create.html', context)
     new_post = form.save(commit=False)
-    new_post.author = request.user
+    new_post.author = user
     new_post.save()
     return redirect('posts:profile', user.username)
 
