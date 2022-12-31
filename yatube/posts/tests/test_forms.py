@@ -57,4 +57,43 @@ class PostCreateFormTests(TestCase):
         )
 
     def test_post_edit(self):
-        pass
+        '''
+        Проверка что валидная форма изменяет пост отобранный по id
+        и происходит редирект на post_detail
+        '''
+        self.post = Post.objects.create(
+            author=self.user,
+            text='Тестовый пост для изменения'
+        )
+
+        posts_count = Post.objects.count()
+        post_id = self.post.id
+
+        form_data = {
+            'text': 'Изменённый тестовый пост'
+        }
+
+        response = self.authorized_client.post(
+            reverse(
+                'posts:post_edit',
+                args=({post_id})
+            ),
+            data=form_data,
+            follow=True
+        )
+        self.assertRedirects(
+            response,
+            reverse(
+                'posts:post_detail',
+                args=({self.post.id})
+            )
+        )
+        self.assertEqual(Post.objects.count(), posts_count)
+        self.assertFalse(
+            Post.objects.filter(
+                text='Тестовый пост для изменения'
+            ).exists())
+        self.assertTrue(
+            Post.objects.filter(
+                text='Изменённый тестовый пост'
+            ).exists())
